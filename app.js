@@ -520,6 +520,8 @@ function renderBarcode(skuCode) {
                     colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.M
                 });
+                const canvas = qrcodeDiv.querySelector('canvas');
+                if (canvas) canvas.style.display = 'none';
             } catch (e) {
                 console.warn('QRCode render error:', e);
             }

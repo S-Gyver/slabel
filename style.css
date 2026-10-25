@@ -351,10 +351,30 @@ input, textarea, .selectable-text {
 
 .sticker-barcode-wrapper svg {
     max-width: 100% !important;
-    height: 14mm !important;
+    height: 12mm !important;
     display: block;
     margin: 0 auto;
     shape-rendering: crispEdges !important;
+}
+
+.sticker-qr-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1.5px;
+}
+
+.sticker-qr-wrapper canvas {
+    display: none !important;
+}
+
+.sticker-qr-wrapper img {
+    display: block !important;
+    margin: 0 auto !important;
+    width: 17mm !important;
+    height: 17mm !important;
+    shape-rendering: crispEdges !important;
+    image-rendering: pixelated !important;
 }
 
 /* ==============================================================================
