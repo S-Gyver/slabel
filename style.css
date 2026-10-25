@@ -1,0 +1,431 @@
+/* ==============================================================================
+   📱 S-GYVER MOBILE SCANNER & LABEL PRINTER - STYLE ENGINE
+   ============================================================================== */
+
+:root {
+    --app-primary: #2563eb;
+    --app-primary-dark: #1d4ed8;
+    --app-bg: #f8fafc;
+    --app-card: #ffffff;
+    --app-text: #0f172a;
+    --app-text-muted: #64748b;
+    --safe-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: 'Prompt', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--app-bg);
+    color: var(--app-text);
+    padding-bottom: calc(75px + var(--safe-bottom));
+    margin: 0;
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Allow text selection in inputs and details */
+input, textarea, .selectable-text {
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+/* Safe Area Insets for iPhone / iPad Notch & Home Indicator */
+.safe-top {
+    padding-top: max(12px, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+/* Bottom Navigation Bar (Glassmorphic) */
+.mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(226, 232, 240, 0.8);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding-top: 8px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    z-index: 50;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    padding: 4px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+}
+
+.nav-item i {
+    font-size: 20px;
+    margin-bottom: 2px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-item.active {
+    color: var(--app-primary);
+}
+
+.nav-item.active i {
+    transform: translateY(-2px) scale(1.1);
+}
+
+/* Scanner Viewport */
+.scanner-container {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #000000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+#reader {
+    width: 100% !important;
+    border: none !important;
+}
+
+#reader video {
+    border-radius: 20px !important;
+    object-fit: cover !important;
+}
+
+/* Laser Scan Line Animation */
+.scan-overlay-target {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 250px;
+    height: 180px;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    border-radius: 16px;
+    pointer-events: none;
+    box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.45);
+}
+
+.scan-laser-line {
+    position: absolute;
+    left: 5%;
+    width: 90%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #ef4444, #f43f5e, #ef4444, transparent);
+    box-shadow: 0 0 12px #f43f5e;
+    border-radius: 2px;
+    animation: scanAnim 2s infinite ease-in-out;
+}
+
+@keyframes scanAnim {
+    0% { top: 10%; opacity: 0.2; }
+    50% { top: 85%; opacity: 1; }
+    100% { top: 10%; opacity: 0.2; }
+}
+
+/* Corner markers */
+.scan-corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: #3b82f6;
+    border-style: solid;
+    pointer-events: none;
+}
+.scan-corner-tl { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-top-left-radius: 14px; }
+.scan-corner-tr { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-top-right-radius: 14px; }
+.scan-corner-bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-bottom-left-radius: 14px; }
+.scan-corner-br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-bottom-right-radius: 14px; }
+
+/* ==============================================================================
+   🏷️ THERMAL STICKER COMPONENT (57MM PERIPAGE ROLL CALIBRATED)
+   ============================================================================== */
+.thermal-label-sticker {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    margin: 0 auto;
+    font-family: 'Kanit', 'Prompt', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    box-sizing: border-box;
+}
+
+.size-57roll {
+    width: 57mm;
+    max-width: 57mm;
+    min-height: 48mm;
+    padding: 2.5mm 5mm 3mm 5mm;
+    font-size: 7.2pt;
+    line-height: 1.3;
+    font-weight: 700;
+    background: #ffffff;
+}
+
+.sticker-line-brand {
+    font-size: 8.8pt;
+    line-height: 1.25;
+    margin-bottom: 2.5px;
+    padding-bottom: 1px;
+    font-weight: 800;
+}
+
+.sticker-line-brand .sticker-tag-lbl,
+.sticker-val-brand {
+    font-size: 9.2pt;
+    font-weight: 800;
+}
+
+.sticker-tag-lbl {
+    font-weight: 800;
+    color: #000000;
+    margin-right: 3px;
+    display: inline;
+    font-size: 7.2pt;
+}
+
+.sticker-val {
+    color: #000000;
+    font-weight: 700;
+    display: inline;
+    font-size: 7.2pt;
+}
+
+.sticker-line {
+    margin-bottom: 2px;
+    line-height: 1.28;
+    font-weight: 700;
+}
+
+/* Middle Row Layout (Flex Row Nowrap - Left Info + Big Size on Right) */
+.sticker-middle-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    margin: 1px 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.sticker-middle-left {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    padding-right: 2px !important;
+}
+
+.sticker-big-size {
+    flex: 0 0 auto !important;
+    font-weight: 900 !important;
+    font-family: 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    color: #000000 !important;
+    line-height: 0.88 !important;
+    text-align: right !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    user-select: none !important;
+    box-sizing: border-box !important;
+    padding-right: 0.5mm !important;
+    font-size: 38pt !important;
+    letter-spacing: -1px !important;
+}
+
+.sticker-line-care {
+    margin-bottom: 2.5px;
+    line-height: 1.25;
+    font-size: 6.5pt;
+    font-weight: 700;
+    text-align: left;
+}
+
+.sticker-line-care .sticker-tag-lbl {
+    font-size: 6.8pt;
+    font-weight: 800;
+}
+
+.sticker-line-care .sticker-val {
+    font-size: 6.5pt;
+    font-weight: 700;
+}
+
+.sticker-line-distributor {
+    margin-bottom: 2px;
+    line-height: 1.25;
+    font-size: 6.8pt;
+    font-weight: 700;
+}
+
+.sticker-line-distributor .sticker-tag-lbl {
+    font-size: 7.2pt;
+    font-weight: 800;
+}
+
+.sticker-line-distributor .sticker-val {
+    font-size: 7.0pt;
+    font-weight: 700;
+}
+
+.sticker-val-address {
+    font-size: 6.5pt;
+    font-weight: 700;
+    line-height: 1.24;
+    padding-left: 2px;
+    margin-top: 1.5px;
+    word-break: break-word;
+}
+
+.sticker-line-price {
+    margin-top: 2.5px;
+    margin-bottom: 2.5px;
+    font-size: 8.2pt;
+    font-weight: 800;
+}
+
+.sticker-line-price .sticker-tag-lbl {
+    font-size: 8.5pt;
+    font-weight: 800;
+}
+
+.sticker-line-price .sticker-val {
+    font-size: 8.8pt;
+    font-weight: 800;
+}
+
+.sticker-barcode-section {
+    border-top: 1px dashed #000000;
+    padding-top: 2px;
+    margin-top: 2.5px;
+}
+
+.sticker-sku-line {
+    text-align: center;
+    font-family: 'Kanit', 'Prompt', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 800;
+    font-size: 7.2pt;
+    color: #000000;
+    white-space: nowrap;
+    overflow: hidden;
+    letter-spacing: 0px;
+    line-height: 1.3;
+}
+
+.sticker-sku-line strong,
+.sticker-sku-line span {
+    font-weight: 850;
+    font-size: 7.2pt;
+    color: #000000;
+}
+
+.sticker-barcode-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+}
+
+.sticker-barcode-wrapper svg {
+    max-width: 100% !important;
+    height: 10mm !important;
+    display: block;
+    margin: 0 auto;
+}
+
+/* ==============================================================================
+   🖨️ PRINT RULES FOR MOBILE AIRPRINT & THERMAL PRINTERS
+   ============================================================================== */
+@media print {
+    @page {
+        margin: 0mm !important;
+        size: auto;
+    }
+
+    html, body {
+        width: 100% !important;
+        height: auto !important;
+        margin: 0mm !important;
+        padding: 0mm !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .no-print,
+    .mobile-nav,
+    header,
+    #scannerTab,
+    #productsTab,
+    #settingsTab,
+    .print-controls {
+        display: none !important;
+    }
+
+    .print-wrapper {
+        display: block !important;
+    }
+
+    .thermal-label-sticker {
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        margin: 0 auto !important;
+        page-break-inside: avoid !important;
+        page-break-after: always !important;
+        break-inside: avoid !important;
+        overflow: hidden !important;
+    }
+
+    .size-57roll {
+        width: 57mm !important;
+        max-width: 57mm !important;
+        padding: 2.5mm 5.5mm 0mm 5.5mm !important;
+    }
+
+    .sticker-middle-row {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: nowrap !important;
+        margin: 1px 0 !important;
+        width: 100% !important;
+    }
+
+    .sticker-middle-left {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        padding-right: 2px !important;
+    }
+
+    .sticker-big-size {
+        flex: 0 0 auto !important;
+        color: #000000 !important;
+        line-height: 0.88 !important;
+    }
+}

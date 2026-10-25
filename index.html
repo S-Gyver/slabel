@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>S-Gyver Mobile - สแกนสต็อก & พิมพ์ฉลาก</title>
+    <meta name="description" content="ระบบสแกนบาร์โค้ด ตรวจสอบสต็อก และพิมพ์ฉลากสินค้าสำหรับมือถือ iPhone, Android, iPad">
+
+    <!-- PWA & Mobile Web App Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="S-Gyver">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3126/3126588.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Kanit:wght@400;600;700;800&family=Prompt:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        prompt: ['Prompt', 'sans-serif'],
+                        kanit: ['Kanit', 'sans-serif'],
+                        fira: ['Fira Code', 'monospace']
+                    },
+                    colors: {
+                        primary: '#2563eb',
+                        primaryDark: '#1d4ed8'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Barcode & QR Code Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- HTML5 Camera Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css?v=20261025_01">
+</head>
+
+<body class="bg-slate-100 text-slate-800 antialiased">
+
+    <!-- ====================================================
+         TOP APP BAR (Mobile Sticky Header)
+         ==================================================== -->
+    <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 px-4 py-2.5 safe-top shadow-sm">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20 text-sm">
+                    <i class="bi bi-upc-scan"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold text-slate-900 leading-tight">S-Gyver Mobile</h1>
+                    <div class="flex items-center gap-1.5 text-[10.5px]">
+                        <span id="dbStatusDot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span id="dbStatusText" class="text-slate-500 font-medium">กำลังเชื่อมต่อ...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick stats or sync indicator -->
+            <button type="button" onclick="refreshProductData()" title="รีเฟรชข้อมูลสต็อก"
+                class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center active:scale-95 transition-all">
+                <i id="btnRefreshIcon" class="bi bi-arrow-clockwise text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ====================================================
+         MAIN APP CONTENT (Tabs)
+         ==================================================== -->
+    <main class="max-w-md mx-auto px-4 py-3">
+
+        <!-- ================================================
+             TAB 1: CAMERA SCANNER (สแกน)
+             ================================================ -->
+        <section id="tabScanner" class="space-y-3">
+            <!-- Camera Viewport Card -->
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 relative">
+                <div class="scanner-container">
+                    <div id="reader"></div>
+
+                    <!-- Target Box overlay with Laser Line -->
+                    <div id="scannerOverlay" class="scan-overlay-target hidden">
+                        <div class="scan-laser-line"></div>
+                        <div class="scan-corner scan-corner-tl"></div>
+                        <div class="scan-corner scan-corner-tr"></div>
+                        <div class="scan-corner scan-corner-bl"></div>
+                        <div class="scan-corner scan-corner-br"></div>
+                    </div>
+                </div>
+
+                <!-- Scanner Controls (Torch, Camera Switch, Power) -->
+                <div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
+                    <button type="button" id="btnToggleCamera" onclick="toggleCameraScanner()"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-blue-600 text-white flex items-center gap-1.5 shadow-sm active:scale-95 transition-all">
+                        <i id="cameraStatusIcon" class="bi bi-camera-video-fill"></i>
+                        <span id="cameraStatusText">เปิดกล้อง</span>
+                    </button>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="btnTorch" onclick="toggleTorch()" disabled
+                            class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center disabled:opacity-40 active:scale-95 transition-all"
+                            title="เปิด/ปิด ไฟฉาย">
+                            <i id="torchIcon" class="bi bi-flashlight"></i>
+                        </button>
+                        <button type="button" id="btnSwitchCamera" onclick="switchCameraFacing()" disabled
+                            class="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center disabled:opacity-40 active:scale-95 transition-all"
+                            title="สลับกล้อง">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual SKU Search Bar -->
+            <div class="bg-white p-2.5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-2">
+                <i class="bi bi-search text-slate-400 pl-1"></i>
+                <input type="text" id="manualSkuInput" placeholder="พิมพ์ SKU หรือชื่อสินค้าเพื่อค้นหา..."
+                    class="flex-1 text-xs sm:text-sm bg-transparent outline-none text-slate-800 placeholder-slate-400"
+                    onkeydown="if(event.key === 'Enter') handleManualSearch()">
+                <button type="button" onclick="handleManualSearch()"
+                    class="px-3 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-semibold active:scale-95 transition-all">
+                    ค้นหา
+                </button>
+            </div>
+
+            <!-- Scanned Product Result Drawer / Card (Appears after scan) -->
+            <div id="scannedProductCard" class="hidden bg-white p-4 rounded-2xl shadow-md border-2 border-blue-500/30 animate-fadeIn space-y-3">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span id="scanCardBrand" class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                            Whatever_Glitters
+                        </span>
+                        <h3 id="scanCardTitle" class="font-bold text-slate-900 text-sm mt-1">เสื้อผ้าแฟชั่น</h3>
+                        <p id="scanCardVariant" class="text-xs text-slate-500 mt-0.5">สี: ทอง | ขนาด / ไซต์: S</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] text-slate-400 font-mono">SKU</div>
+                        <div id="scanCardSku" class="text-xs font-bold font-mono text-slate-800">WFC-SKT-01</div>
+                    </div>
+                </div>
+
+                <!-- Stock & Location Stats -->
+                <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+                    <div>
+                        <span class="text-[10.5px] text-slate-500">คงเหลือในคลัง:</span>
+                        <div class="flex items-baseline gap-1">
+                            <span id="scanCardStock" class="text-lg font-bold text-blue-700">0</span>
+                            <span class="text-xs text-slate-500">ชิ้น</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-[10.5px] text-slate-500">ชั้นวางสินค้า:</span>
+                        <div id="scanCardLocation" class="text-sm font-bold text-slate-800 flex items-center gap-1 mt-0.5">
+                            <i class="bi bi-geo-alt-fill text-rose-500 text-xs"></i>
+                            <span>-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stock Action Buttons (+1, -1, Adjust) -->
+                <div class="flex items-center gap-2 pt-1">
+                    <button type="button" onclick="adjustCurrentStock(1)"
+                        class="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1 shadow-sm">
+                        <i class="bi bi-plus-lg"></i>
+                        <span>รับเข้า (+1)</span>
+                    </button>
+                    <button type="button" onclick="adjustCurrentStock(-1)"
+                        class="flex-1 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1 shadow-sm">
+                        <i class="bi bi-dash-lg"></i>
+                        <span>ตัดออก (-1)</span>
+                    </button>
+                    <button type="button" onclick="openPrintWithCurrentProduct()"
+                        class="py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1 shadow-sm"
+                        title="พิมพ์ฉลากสินค้านี้">
+                        <i class="bi bi-printer"></i>
+                        <span>พิมพ์</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================
+             TAB 2: PRODUCTS LIST (คลังสินค้า)
+             ================================================ -->
+        <section id="tabProducts" class="hidden space-y-3">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">สินค้าในระบบ</h2>
+                    <p class="text-xs text-slate-500">รวม <span id="productTotalCount" class="font-bold text-blue-600">0</span> รายการ</p>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="filterProducts('all')" id="btnFilterAll"
+                        class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white">ทั้งหมด</button>
+                    <button type="button" onclick="filterProducts('low')" id="btnFilterLow"
+                        class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-200 text-slate-700">ใกล้หมด</button>
+                </div>
+            </div>
+
+            <!-- Search input inside products tab -->
+            <div class="bg-white p-2.5 rounded-xl shadow-sm border border-slate-200 flex items-center gap-2">
+                <i class="bi bi-search text-slate-400"></i>
+                <input type="text" id="productListSearchInput" placeholder="ค้นหาตามรหัส SKU, ชื่อ, สี, ไซส์..."
+                    class="w-full text-xs bg-transparent outline-none text-slate-800"
+                    oninput="handleProductListFilter(this.value)">
+            </div>
+
+            <!-- Product Card List Container -->
+            <div id="productCardsContainer" class="space-y-2">
+                <!-- Populated via JS -->
+                <div class="text-center py-10 text-slate-400 text-xs">
+                    <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent mb-2"></div>
+                    <div>กำลังโหลดข้อมูลสินค้า...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================
+             TAB 3: PRINT LABEL (พิมพ์ฉลาก 57mm)
+             ================================================ -->
+        <section id="tabPrint" class="hidden space-y-3">
+            <!-- Print Controls & Actions Card -->
+            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <i class="bi bi-printer text-blue-600"></i>
+                        <span>เครื่องพิมพ์ความร้อน PeriPage 57mm</span>
+                    </span>
+                    <span class="text-[10px] font-mono font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-200">
+                        1:1 Thermal
+                    </span>
+                </div>
+
+                <!-- Print Quantity & Big Size Toggle -->
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">จำนวนที่พิมพ์ (ดวง):</label>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="adjustPrintCount(-1)"
+                                class="w-7 h-7 bg-white rounded-lg border border-slate-200 flex items-center justify-center font-bold active:scale-95">-</button>
+                            <input type="number" id="printCountInput" value="1" min="1" max="200"
+                                class="w-12 text-center font-bold bg-transparent outline-none">
+                            <button type="button" onclick="adjustPrintCount(1)"
+                                class="w-7 h-7 bg-white rounded-lg border border-slate-200 flex items-center justify-center font-bold active:scale-95">+</button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-2 rounded-xl border border-slate-200 flex flex-col justify-center">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="chkShowBigSize" checked onchange="updateStickerPreviewFromInputs()"
+                                class="w-4 h-4 text-blue-600 rounded">
+                            <span class="text-[11px] font-bold text-slate-700">แสดงไซส์ตัวใหญ่ (S/M/L)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Print Action Button -->
+                <button type="button" onclick="triggerMobileThermalPrint()"
+                    class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md shadow-blue-500/25 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i class="bi bi-printer-fill text-base"></i>
+                    <span>สั่งพิมพ์ฉลาก (Print Label)</span>
+                </button>
+            </div>
+
+            <!-- Sticker Live Preview Stage -->
+            <div class="flex justify-center p-3 bg-slate-200/80 rounded-2xl border border-slate-300/80 overflow-x-auto">
+                <!-- 57mm Thermal Sticker Component -->
+                <div id="mobilePrintableLabel" class="thermal-label-sticker size-57roll">
+                    <!-- 1. ชื่อแบรนด์ -->
+                    <div class="sticker-line-brand">
+                        <span class="sticker-tag-lbl">ชื่อแบรนด์ :</span>
+                        <span id="lblBrand" class="sticker-val-brand">Whatever_Glitters</span>
+                    </div>
+
+                    <!-- 2. ประเภทสินค้า -->
+                    <div class="sticker-line">
+                        <span class="sticker-tag-lbl">ประเภทสินค้า :</span>
+                        <span id="lblProductType" class="sticker-val">เสื้อผ้าแฟชั่นผู้หญิง</span>
+                    </div>
+
+                    <!-- 3 & 4. สี, ขนาด / ไซต์ และวิธีใช้ พร้อมป้ายตัวใหญ่ด้านขวา -->
+                    <div class="sticker-middle-row">
+                        <div class="sticker-middle-left">
+                            <div id="stickerLineColor" class="sticker-line">
+                                <span class="sticker-tag-lbl">สี :</span>
+                                <span id="lblColor" class="sticker-val">ทอง</span>
+                            </div>
+                            <div class="sticker-line">
+                                <span class="sticker-tag-lbl">ขนาด / ไซต์ :</span>
+                                <span id="lblVariant" class="sticker-val">S</span>
+                            </div>
+                            <div class="sticker-line">
+                                <span class="sticker-tag-lbl">วิธีใช้ :</span>
+                                <span id="lblUsage" class="sticker-val">สำหรับสวมใส่</span>
+                            </div>
+                        </div>
+
+                        <!-- ป้ายตัวอักษรไซส์ตัวใหญ่เด่นชัด (S / M / L / XL) -->
+                        <div id="stickerBigSize" class="sticker-big-size">
+                            S
+                        </div>
+                    </div>
+
+                    <!-- 5. ข้อแนะนำ -->
+                    <div class="sticker-line-care">
+                        <span class="sticker-tag-lbl">ข้อแนะนำ :</span>
+                        <span id="lblCare" class="sticker-val">ซักมือเบาๆ ห้ามขยี้แรง ห้ามแช่น้ำนาน ห้ามรีดทับลายเลื่อม และงดปั่นแห้ง</span>
+                    </div>
+
+                    <!-- 6. ผู้ผลิต -->
+                    <div class="sticker-line">
+                        <span class="sticker-tag-lbl">ผู้ผลิต :</span>
+                        <span id="lblManufacturer" class="sticker-val">ประเทศจีน</span>
+                    </div>
+
+                    <!-- 7. ผู้จัดจำหน่าย -->
+                    <div class="sticker-line-distributor">
+                        <div>
+                            <span class="sticker-tag-lbl">ผู้จัดจำหน่าย :</span>
+                            <span id="lblDistributor" class="sticker-val">Whatever_Glitters</span>
+                        </div>
+                        <div id="lblDistributorAddress" class="sticker-val-address">
+                            222/56
+                        </div>
+                    </div>
+
+                    <!-- 8. ราคา -->
+                    <div class="sticker-line-price">
+                        <span class="sticker-tag-lbl">ราคา :</span>
+                        <span id="lblPriceText" class="sticker-val font-semibold">฿449 บาท</span>
+                    </div>
+
+                    <!-- 9. บาร์โค้ด & SKU -->
+                    <div class="sticker-barcode-section">
+                        <div class="sticker-sku-line">
+                            <span>SKU: </span>
+                            <strong id="lblSkuText">WFC-SKT-MNS-001-01</strong>
+                        </div>
+                        <div class="sticker-barcode-wrapper">
+                            <svg id="barcodeSvg"></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================
+             TAB 4: SETTINGS (ตั้งค่า)
+             ================================================ -->
+        <section id="tabSettings" class="hidden space-y-3">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                        <i class="bi bi-database text-blue-600"></i>
+                        <span>การเชื่อมต่อฐานข้อมูล Supabase</span>
+                    </h2>
+                    <p class="text-[11px] text-slate-500 mt-0.5">เชื่อมต่อคลังสินค้าเดียวกับระบบหลัก</p>
+                </div>
+
+                <div class="space-y-2 text-xs">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Supabase URL:</label>
+                        <input type="text" id="settingSbUrl" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Supabase Anon Key:</label>
+                        <input type="password" id="settingSbKey" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="pt-1 flex gap-2">
+                        <button type="button" onclick="saveSettings()"
+                            class="flex-1 py-2 bg-blue-600 text-white rounded-xl font-bold text-xs active:scale-95 transition-all">
+                            บันทึกการตั้งค่า
+                        </button>
+                        <button type="button" onclick="resetDefaultSettings()"
+                            class="px-3 py-2 bg-slate-100 text-slate-600 rounded-xl font-semibold text-xs active:scale-95 transition-all">
+                            ค่าเริ่มต้น
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <div class="space-y-2.5 text-xs">
+                    <h3 class="font-bold text-slate-900 text-xs">การสแกน & เสียง</h3>
+                    <label class="flex items-center justify-between cursor-pointer py-1">
+                        <span class="font-medium text-slate-700">เสียง Beep เมื่อสแกนติด</span>
+                        <input type="checkbox" id="settingSoundChime" checked onchange="saveAppPreferences()" class="w-4 h-4 text-blue-600 rounded">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer py-1">
+                        <span class="font-medium text-slate-700">สั่นสะเทือน (Vibrate)</span>
+                        <input type="checkbox" id="settingVibrate" checked onchange="saveAppPreferences()" class="w-4 h-4 text-blue-600 rounded">
+                    </label>
+                </div>
+            </div>
+
+            <!-- App info footer -->
+            <div class="text-center py-4 text-[11px] text-slate-400">
+                <div>S-Gyver Mobile Scanner & Label Printer v1.0.0</div>
+                <div>รองรับ iOS, iPadOS, Android & PWA Standalone</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ====================================================
+         BOTTOM NAVIGATION BAR (Fixed Mobile Tabs)
+         ==================================================== -->
+    <nav class="mobile-nav">
+        <button type="button" class="nav-item active" onclick="switchTab('tabScanner', this)">
+            <i class="bi bi-camera-fill"></i>
+            <span>สแกน</span>
+        </button>
+        <button type="button" class="nav-item" onclick="switchTab('tabProducts', this)">
+            <i class="bi bi-box-seam-fill"></i>
+            <span>สต็อก</span>
+        </button>
+        <button type="button" class="nav-item" onclick="switchTab('tabPrint', this)">
+            <i class="bi bi-printer-fill"></i>
+            <span>พิมพ์ฉลาก</span>
+        </button>
+        <button type="button" class="nav-item" onclick="switchTab('tabSettings', this)">
+            <i class="bi bi-gear-fill"></i>
+            <span>ตั้งค่า</span>
+        </button>
+    </nav>
+
+    <!-- Hidden audio element for chime -->
+    <audio id="audioBeep" preload="auto">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- App Logic -->
+    <script src="app.js?v=20261025_01"></script>
+</body>
+
+</html>
