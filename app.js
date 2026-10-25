@@ -490,20 +490,40 @@ function updateStickerPreviewFromInputs() {
 
 function renderBarcode(skuCode) {
     const svg = document.getElementById('barcodeSvg');
-    if (!svg || !window.JsBarcode) return;
+    const qrcodeDiv = document.getElementById('qrcodeDiv');
 
-    try {
-        JsBarcode(svg, skuCode, {
-            format: "CODE128",
-            width: 1.6,
-            height: 85,
-            displayValue: false,
-            margin: 4,
-            background: "#ffffff",
-            lineColor: "#000000"
-        });
-    } catch (e) {
-        console.warn('JsBarcode render error:', e);
+    if (svg && window.JsBarcode) {
+        try {
+            JsBarcode(svg, skuCode, {
+                format: "CODE128",
+                width: 1.55,
+                height: 65,
+                displayValue: false,
+                margin: 3,
+                background: "#ffffff",
+                lineColor: "#000000"
+            });
+        } catch (e) {
+            console.warn('JsBarcode render error:', e);
+        }
+    }
+
+    if (qrcodeDiv) {
+        qrcodeDiv.innerHTML = '';
+        if (window.QRCode) {
+            try {
+                new QRCode(qrcodeDiv, {
+                    text: skuCode,
+                    width: 58,
+                    height: 58,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch (e) {
+                console.warn('QRCode render error:', e);
+            }
+        }
     }
 }
 

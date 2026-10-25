@@ -45,6 +45,7 @@
 
     <!-- Barcode & QR Code Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- HTML5 Camera Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <!-- Supabase JS Client -->
@@ -354,6 +355,9 @@
                         </div>
                         <div class="sticker-barcode-wrapper">
                             <svg id="barcodeSvg"></svg>
+                        </div>
+                        <div class="sticker-qr-wrapper flex justify-center py-0.5">
+                            <div id="qrcodeDiv"></div>
                         </div>
                     </div>
                 </div>
