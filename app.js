@@ -456,10 +456,10 @@ function updateStickerPreview(product) {
                 lblBigSize.style.fontSize = '24pt';
                 lblBigSize.style.lineHeight = '0.90';
                 lblBigSize.style.letterSpacing = '-0.8px';
-            } else if (cleanUpper.length <= 5) { // M-XXL, 5XL, S-M
-                lblBigSize.style.fontSize = '18pt';
+            } else if (cleanUpper.length <= 5) { // Free, M-XXL, 5XL, S-M
+                lblBigSize.style.fontSize = '16pt';
                 lblBigSize.style.lineHeight = '0.95';
-                lblBigSize.style.letterSpacing = '-0.5px';
+                lblBigSize.style.letterSpacing = '-0.6px';
             } else { // Free Size, One Size
                 lblBigSize.style.fontSize = '13pt';
                 lblBigSize.style.lineHeight = '1.02';
