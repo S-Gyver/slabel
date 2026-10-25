@@ -430,7 +430,7 @@ function updateStickerPreview(product) {
     if (lblProductType) lblProductType.innerText = product.product_type || product.name || 'เสื้อผ้าแฟชั่นผู้หญิง';
 
     const color = product.color || extractColor(product.variant) || '-';
-    const size = product.size || extractSize(product.variant) || product.variant || 'S';
+    const size = extractPureSize(product.size || extractSize(product.variant) || product.variant);
 
     if (lblColor) lblColor.innerText = color;
     if (lblVariant) lblVariant.innerText = size;
@@ -964,20 +964,133 @@ function saveAppPreferences() {
     localStorage.setItem('sgyver_mobile_vibrate', AppState.vibrateEnabled);
 }
 
-// Helpers
+// ==============================================================================
+// 8. VARIANT & PURE SIZE EXTRACTION (S, M, L, XL, XXL, FREE SIZE)
+// ==============================================================================
+function extractPureSize(raw) {
+    if (!raw) return 'Free Size';
+    let str = String(raw).trim();
+    if (!str || str === '-' || str === 'ไม่มี') return 'Free Size';
+
+    // ตัดส่วนขยายความในวงเล็บ เช่น (อก38"), [เอว30], (รอบอก 40 นิ้ว)
+    str = str.replace(/[\(\[].*?[\)\]]/g, ' ').trim();
+    // ตัดข้อความขยายความที่ตามหลัง เช่น "อก 38", "รอบอก 40", "เอว 32"
+    str = str.replace(/(?:อก|รอบอก|เอว|สะโพก|ความยาว|ยาว).*$/i, '').trim();
+
+    if (!str) return 'Free Size';
+
+    // 1. ตรวจหาคำว่า Free Size / ฟรีไซส์ / One Size / F
+    if (/^(free\s*size|freesize|free-size|one\s*size|onesize|free|ฟรีไซส์|ฟรีไซต์|f)$/i.test(str)) {
+        return 'Free Size';
+    }
+
+    // 2. ตรวจหาช่วงไซส์เสื้อผ้ามาตรฐาน เช่น S-M, M-L, L-XL, XL-2XL, M-XXL
+    const rangeMatch = str.match(/\b([XSML]{1,3}\s*-\s*(?:[XSML]{1,3}|[2-5]XL))\b/i);
+    if (rangeMatch) {
+        return rangeMatch[1].toUpperCase().replace(/\s+/g, '');
+    }
+
+    // 3. ตรวจหาไซส์เสื้อผ้ามาตรฐาน (เรียงจากตัวยาวไปสั้น)
+    const sizeRegex = /(?:^|[\s/\-_,])(8XL|7XL|6XL|5XL|4XL|3XL|2XL|XXXXXL|XXXXL|XXXL|XXL|3XS|2XS|XXS|XS|XL|2X|3X|4X|5X|S|M|L|F)(?=[\s/\-_,"'(:;]|$)/i;
+    const match = str.match(sizeRegex);
+    if (match) {
+        const found = match[1].toUpperCase();
+        if (found === 'F') return 'Free Size';
+        return found;
+    }
+
+    // 4. ตรวจหากรณีไซส์กางเกง/รองเท้าที่เป็นตัวเลข 2 หลัก (เช่น 24 - 48 หรือ 28(เอว28))
+    const numMatch = str.match(/(?:^|[\s/\-_,])([2-4][0-9]|5[0-2])(?=[\s/\-_,"'(:;]|$)/);
+    if (numMatch) {
+        return numMatch[1];
+    }
+
+    // 5. หากมีคำว่า free หรือ ฟรี
+    if (/free|ฟรี/i.test(str)) {
+        return 'Free Size';
+    }
+
+    // 6. ถ้าไม่ได้ลงไซส์ไว้ หรือเป็นข้อความอื่นที่ไม่ใช่ไซส์ ให้เป็น 'Free Size' ตามคำขอ
+    return 'Free Size';
+}
+
+function extractPureSizeCandidate(raw) {
+    if (!raw) return null;
+    let str = String(raw).trim();
+    if (!str || str === '-' || str === 'ไม่มี') return null;
+
+    str = str.replace(/[\(\[].*?[\)\]]/g, ' ').trim();
+    str = str.replace(/(?:อก|รอบอก|เอว|สะโพก|ความยาว|ยาว).*$/i, '').trim();
+
+    if (!str) return null;
+
+    if (/^(free\s*size|freesize|free-size|one\s*size|onesize|free|ฟรีไซส์|ฟรีไซต์|f)$/i.test(str)) {
+        return 'Free Size';
+    }
+
+    const rangeMatch = str.match(/\b([XSML]{1,3}\s*-\s*(?:[XSML]{1,3}|[2-5]XL))\b/i);
+    if (rangeMatch) {
+        return rangeMatch[1].toUpperCase().replace(/\s+/g, '');
+    }
+
+    const sizeRegex = /(?:^|[\s/\-_,])(8XL|7XL|6XL|5XL|4XL|3XL|2XL|XXXXXL|XXXXL|XXXL|XXL|3XS|2XS|XXS|XS|XL|2X|3X|4X|5X|S|M|L|F)(?=[\s/\-_,"'(:;]|$)/i;
+    const match = str.match(sizeRegex);
+    if (match) {
+        const found = match[1].toUpperCase();
+        if (found === 'F') return 'Free Size';
+        return found;
+    }
+
+    const numMatch = str.match(/(?:^|[\s/\-_,])([2-4][0-9]|5[0-2])(?=[\s/\-_,"'(:;]|$)/);
+    if (numMatch) {
+        return numMatch[1];
+    }
+
+    if (/free|ฟรี/i.test(str)) {
+        return 'Free Size';
+    }
+
+    return null;
+}
+
+function splitVariantColorAndSize(rawVariant) {
+    const str = String(rawVariant || '').trim();
+    if (!str) return { color: '', size: 'Free Size' };
+
+    if (str.includes(',') || str.includes('/') || str.includes(' - ') || str.includes('|')) {
+        const parts = str.split(/[,/|]+|(?:\s+-\s+)/).map(s => s.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+            const p0Size = extractPureSizeCandidate(parts[0]);
+            const p1Size = extractPureSizeCandidate(parts[1]);
+
+            if (p1Size) {
+                return { color: parts[0], size: p1Size };
+            } else if (p0Size) {
+                return { color: parts.slice(1).join(', '), size: p0Size };
+            } else {
+                return { color: parts[0], size: extractPureSize(parts[1]) };
+            }
+        }
+    }
+
+    const candidate = extractPureSizeCandidate(str);
+    if (candidate) {
+        return { color: '', size: candidate };
+    }
+
+    return { color: str, size: 'Free Size' };
+}
+
 function extractColor(variantStr) {
     if (!variantStr) return '';
-    const parts = variantStr.split(/[\/\-,|]/);
-    return parts[0]?.replace(/(สี|Color)/gi, '').trim() || '';
+    const parsed = splitVariantColorAndSize(variantStr);
+    return parsed.color;
 }
 
 function extractSize(variantStr) {
-    if (!variantStr) return '';
-    const parts = variantStr.split(/[\/\-,|]/);
-    if (parts.length > 1) {
-        return parts[1]?.replace(/(ไซส์|ขนาด|Size)/gi, '').trim() || '';
-    }
-    return '';
+    if (!variantStr) return 'Free Size';
+    const parsed = splitVariantColorAndSize(variantStr);
+    return parsed.size || extractPureSize(variantStr);
 }
 
 // ==============================================================================
