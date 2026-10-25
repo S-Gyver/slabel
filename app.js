@@ -973,3 +973,273 @@ function extractSize(variantStr) {
     }
     return '';
 }
+
+// ==============================================================================
+// 9. THERMAL PRINT ENGINE & BLUETOOTH / SHARE INTEGRATIONS (NO WATERMARK)
+// ==============================================================================
+function adjustPrintCount(delta) {
+    const input = document.getElementById('printCountInput');
+    if (!input) return;
+    let val = parseInt(input.value, 10) || 1;
+    val = Math.max(1, Math.min(200, val + delta));
+    input.value = val;
+}
+
+function updateStickerPreviewFromInputs() {
+    const chk = document.getElementById('chkShowBigSize');
+    const bigSize = document.getElementById('stickerBigSize');
+    if (chk && bigSize) {
+        bigSize.style.display = chk.checked ? 'flex' : 'none';
+    }
+}
+
+function triggerMobileThermalPrint() {
+    window.print();
+}
+
+const MobileBluetoothPrinter = {
+    device: null,
+    server: null,
+    characteristic: null,
+    isConnected: false,
+
+    async connect() {
+        if (!navigator.bluetooth) {
+            throw new Error('เบราว์เซอร์นี้ยังไม่รองรับ Web Bluetooth (บน Android แนะนำ Chrome/Edge, บน iPhone/iPad แนะนำเบราว์เซอร์ Bluefy)');
+        }
+
+        const optionalServices = [
+            '0000ff00-0000-1000-8000-00805f9b34fb', // PeriPage primary
+            '0000ff02-0000-1000-8000-00805f9b34fb',
+            '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC Transparent
+            '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART
+            '000018f0-0000-1000-8000-00805f9b34fb', // Serial BLE
+            '0000e0ff-0000-1000-8000-00805f9b34fb'
+        ];
+
+        try {
+            this.device = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: optionalServices
+            });
+
+            this.device.addEventListener('gattserverdisconnected', () => {
+                this.isConnected = false;
+                this.characteristic = null;
+            });
+
+            this.server = await this.device.gatt.connect();
+            const services = await this.server.getPrimaryServices();
+            for (const s of services) {
+                try {
+                    const chars = await s.getCharacteristics();
+                    for (const c of chars) {
+                        if (c.properties.write || c.properties.writeWithoutResponse) {
+                            this.characteristic = c;
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.warn(e);
+                }
+                if (this.characteristic) break;
+            }
+
+            if (!this.characteristic) {
+                throw new Error('เชื่อมต่อสำเร็จ แต่ไม่พบบริการพิมพ์ของเครื่องพิมพ์บลูทูธนี้');
+            }
+
+            this.isConnected = true;
+            return this.device.name || 'Bluetooth Printer';
+        } catch (err) {
+            this.isConnected = false;
+            throw err;
+        }
+    },
+
+    async printRasterImage(canvas) {
+        if (!this.isConnected || !this.characteristic) {
+            await this.connect();
+        }
+
+        const width = canvas.width;
+        const height = canvas.height;
+        const ctx = canvas.getContext('2d');
+        const imgData = ctx.getImageData(0, 0, width, height).data;
+
+        const widthBytes = Math.ceil(width / 8);
+        const rasterData = [];
+
+        const xL = widthBytes & 0xFF;
+        const xH = (widthBytes >> 8) & 0xFF;
+        const yL = height & 0xFF;
+        const yH = (height >> 8) & 0xFF;
+
+        const header = [0x1B, 0x40, 0x10, 0xFF, 0xFE, 0x01];
+        const cmdHeader = [0x1D, 0x76, 0x30, 0x00, xL, xH, yL, yH];
+
+        for (let y = 0; y < height; y++) {
+            for (let bx = 0; bx < widthBytes; bx++) {
+                let byteVal = 0;
+                for (let bit = 0; bit < 8; bit++) {
+                    const x = bx * 8 + bit;
+                    if (x < width) {
+                        const idx = (y * width + x) * 4;
+                        const r = imgData[idx];
+                        const g = imgData[idx + 1];
+                        const b = imgData[idx + 2];
+                        const a = imgData[idx + 3];
+                        const isDark = a > 128 && (0.299 * r + 0.587 * g + 0.114 * b < 165);
+                        if (isDark) {
+                            byteVal |= (1 << (7 - bit));
+                        }
+                    }
+                }
+                rasterData.push(byteVal);
+            }
+        }
+
+        const footer = [0x1B, 0x64, 0x05, 0x0A, 0x0A];
+
+        const fullPayload = new Uint8Array([
+            ...header,
+            ...cmdHeader,
+            ...rasterData,
+            ...footer
+        ]);
+
+        const chunkSize = 100;
+        for (let i = 0; i < fullPayload.length; i += chunkSize) {
+            const chunk = fullPayload.slice(i, i + chunkSize);
+            if (this.characteristic.properties.writeWithoutResponse) {
+                await this.characteristic.writeValueWithoutResponse(chunk);
+            } else {
+                await this.characteristic.writeValue(chunk);
+            }
+            await new Promise(r => setTimeout(r, 15));
+        }
+    }
+};
+
+async function triggerMobileBluetoothPrint() {
+    const labelEl = document.getElementById('mobilePrintableLabel');
+    if (!labelEl) return;
+
+    if (typeof html2canvas === 'undefined') {
+        alert('กรุณารอโหลดระบบสักครู่ หรือรีเฟรชหน้าเว็บ');
+        return;
+    }
+
+    const btn = document.getElementById('btnMobileBtPrint');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div> <span>กำลังส่งพิมพ์บลูทูธ...</span>`;
+    }
+
+    try {
+        const countInput = document.getElementById('printCountInput');
+        const printCopies = Math.max(1, parseInt(countInput?.value, 10) || 1);
+
+        const targetWidth = 384;
+        const scale = targetWidth / labelEl.offsetWidth;
+
+        const canvas = await html2canvas(labelEl, {
+            scale: scale,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false
+        });
+
+        for (let i = 0; i < printCopies; i++) {
+            await MobileBluetoothPrinter.printRasterImage(canvas);
+            if (i < printCopies - 1) {
+                await new Promise(r => setTimeout(r, 600));
+            }
+        }
+
+        alert(`✅ พิมพ์ฉลากออกเครื่องพิมพ์บลูทูธเรียบร้อยแล้ว (${printCopies} ดวง, ไม่มีลายน้ำ 100%)`);
+    } catch (err) {
+        console.error('Mobile Bluetooth Print Error:', err);
+        if (err.name !== 'NotFoundError') {
+            alert('ไม่สามารถพิมพ์ผ่านบลูทูธได้: ' + (err.message || err) + '\n\n💡 แนะนำ: กดปุ่ม "แชร์เข้าแอป PeriPage" เพื่อพิมพ์ผ่านแอปแท้ฟรี ไม่มีลายน้ำ');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+async function shareMobileStickerToPeriPageApp() {
+    const labelEl = document.getElementById('mobilePrintableLabel');
+    if (!labelEl) return;
+
+    if (typeof html2canvas === 'undefined') {
+        alert('กำลังโหลดระบบภาพ กรุณาลองใหม่อีกครั้ง');
+        return;
+    }
+
+    const btn = document.getElementById('btnMobileShare');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="inline-block animate-spin rounded-full h-3.5 w-3.5 border-2 border-indigo-600 border-t-transparent"></div> <span>เตรียมภาพ...</span>`;
+    }
+
+    try {
+        const sku = (document.getElementById('lblSkuText')?.textContent || 'STICKER').trim();
+        const canvas = await html2canvas(labelEl, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false
+        });
+
+        canvas.toBlob(async (blob) => {
+            if (!blob) {
+                alert('ไม่สามารถแปลงฉลากเป็นภาพได้');
+                return;
+            }
+
+            const fileName = `Label_${sku}.png`;
+            const file = new File([blob], fileName, { type: 'image/png' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: `ฉลากสินค้า ${sku}`,
+                        text: 'พิมพ์ฉลากสินค้าผ่านแอป PeriPage ฟรี ไม่มีลายน้ำ'
+                    });
+                } catch (shareErr) {
+                    if (shareErr.name !== 'AbortError') {
+                        downloadMobileStickerImage(canvas, fileName);
+                    }
+                }
+            } else {
+                downloadMobileStickerImage(canvas, fileName);
+                alert('📱 บันทึกรูปภาพฉลากเรียบร้อยแล้ว!\n\nคุณสามารถเปิดรูปนี้ในแอป "PeriPage" ทางการเพื่อกดพิมพ์ได้ทันที (ไม่มีลายน้ำแน่นอน)');
+            }
+        }, 'image/png');
+    } catch (err) {
+        console.error('Mobile Share Error:', err);
+        alert('เกิดข้อผิดพลาดในการแชร์: ' + err.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
+function downloadMobileStickerImage(canvas, fileName) {
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+

@@ -46,6 +46,7 @@
     <!-- Barcode & QR Code Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <!-- HTML5 Camera Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <!-- Supabase JS Client -->
@@ -271,12 +272,27 @@
                     </div>
                 </div>
 
-                <!-- Print Action Button -->
-                <button type="button" onclick="triggerMobileThermalPrint()"
-                    class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md shadow-blue-500/25 active:scale-95 transition-all flex items-center justify-center gap-2">
-                    <i class="bi bi-printer-fill text-base"></i>
-                    <span>สั่งพิมพ์ฉลาก (Print Label)</span>
-                </button>
+                <!-- Print Action Buttons Group -->
+                <div class="space-y-2">
+                    <button type="button" onclick="triggerMobileBluetoothPrint()" id="btnMobileBtPrint"
+                        class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-500/25 active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i class="bi bi-bluetooth text-base"></i>
+                        <span>พิมพ์ผ่านบลูทูธตรง (PeriPage / ESC-POS)</span>
+                    </button>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="shareMobileStickerToPeriPageApp()" id="btnMobileShare"
+                            class="py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl font-bold text-xs active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                            <i class="bi bi-share-fill text-xs"></i>
+                            <span>แชร์เข้าแอป PeriPage</span>
+                        </button>
+                        <button type="button" onclick="triggerMobileThermalPrint()" id="btnMobileSysPrint"
+                            class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-semibold text-xs active:scale-95 transition-all flex items-center justify-center gap-1.5">
+                            <i class="bi bi-printer text-xs"></i>
+                            <span>พิมพ์ผ่านเบราว์เซอร์</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Sticker Live Preview Stage -->
@@ -450,7 +466,7 @@
     </audio>
 
     <!-- App Logic -->
-    <script src="app.js?v=20261025_01"></script>
+    <script src="app.js?v=20261025_02"></script>
 </body>
 
 </html>
