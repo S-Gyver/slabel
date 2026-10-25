@@ -317,27 +317,31 @@ input, textarea, .selectable-text {
 }
 
 .sticker-barcode-section {
-    border-top: 1px dashed #000000;
-    padding-top: 2px;
-    margin-top: 2.5px;
+    display: block;
+    clear: both;
+    border-top: 1.5px dashed #000000;
+    padding-top: 6px;
+    margin-top: 6px;
+    width: 100%;
 }
 
 .sticker-sku-line {
+    display: block;
     text-align: center;
     font-family: 'Kanit', 'Prompt', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-weight: 800;
-    font-size: 7.2pt;
+    font-size: 7.8pt;
     color: #000000;
+    line-height: 1.5;
+    margin: 0 0 3px 0;
+    padding: 2px 0 2px 0;
     white-space: nowrap;
-    overflow: hidden;
-    letter-spacing: 0px;
-    line-height: 1.3;
 }
 
 .sticker-sku-line strong,
 .sticker-sku-line span {
     font-weight: 850;
-    font-size: 7.2pt;
+    font-size: 7.8pt;
     color: #000000;
 }
 
@@ -346,7 +350,7 @@ input, textarea, .selectable-text {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin-top: 1px;
+    margin: 2px 0 4px 0;
 }
 
 .sticker-barcode-wrapper svg {
@@ -358,23 +362,34 @@ input, textarea, .selectable-text {
 }
 
 .sticker-qr-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 1.5px;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin-top: 3mm !important;
+    margin-bottom: 2mm !important;
+    min-height: 20mm !important;
 }
 
 .sticker-qr-wrapper canvas {
-    display: none !important;
+    display: block !important;
+    margin: 0 auto !important;
+    width: 22mm !important;
+    height: 22mm !important;
+    shape-rendering: crispEdges !important;
+    image-rendering: pixelated !important;
 }
 
 .sticker-qr-wrapper img {
-    display: block !important;
-    margin: 0 auto !important;
-    width: 17mm !important;
-    height: 17mm !important;
-    shape-rendering: crispEdges !important;
-    image-rendering: pixelated !important;
+    display: none !important;
+}
+
+.sticker-tear-line {
+    text-align: center;
+    font-size: 7.5pt;
+    color: #000000;
+    margin-top: 2mm;
+    letter-spacing: 2px;
+    font-weight: 700;
 }
 
 /* ==============================================================================

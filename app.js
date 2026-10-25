@@ -514,28 +514,26 @@ function renderBarcode(skuCode) {
             try {
                 new QRCode(qrcodeDiv, {
                     text: skuCode,
-                    width: 58,
-                    height: 58,
+                    width: 140,
+                    height: 140,
                     colorDark: '#000000',
                     colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.M
                 });
                 const canvas = qrcodeDiv.querySelector('canvas');
-                if (canvas) canvas.style.display = 'none';
+                if (canvas) {
+                    canvas.style.display = 'block';
+                    canvas.style.margin = '0 auto';
+                }
+                const img = qrcodeDiv.querySelector('img');
+                if (img) {
+                    img.style.display = 'none';
+                }
             } catch (e) {
                 console.warn('QRCode render error:', e);
             }
         }
     }
-}
-
-function adjustPrintCount(delta) {
-    const input = document.getElementById('printCountInput');
-    if (!input) return;
-    let val = parseInt(input.value || '1', 10) + delta;
-    if (val < 1) val = 1;
-    if (val > 100) val = 100;
-    input.value = val;
 }
 
 function openPrintWithCurrentProduct() {
@@ -977,26 +975,6 @@ function extractSize(variantStr) {
 // ==============================================================================
 // 9. THERMAL PRINT ENGINE & BLUETOOTH / SHARE INTEGRATIONS (NO WATERMARK)
 // ==============================================================================
-function adjustPrintCount(delta) {
-    const input = document.getElementById('printCountInput');
-    if (!input) return;
-    let val = parseInt(input.value, 10) || 1;
-    val = Math.max(1, Math.min(200, val + delta));
-    input.value = val;
-}
-
-function updateStickerPreviewFromInputs() {
-    const chk = document.getElementById('chkShowBigSize');
-    const bigSize = document.getElementById('stickerBigSize');
-    if (chk && bigSize) {
-        bigSize.style.display = chk.checked ? 'flex' : 'none';
-    }
-}
-
-function triggerMobileThermalPrint() {
-    window.print();
-}
-
 const MobileBluetoothPrinter = {
     device: null,
     server: null,
