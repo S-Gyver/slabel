@@ -992,7 +992,20 @@ const MobileBluetoothPrinter = {
             '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC Transparent
             '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART
             '000018f0-0000-1000-8000-00805f9b34fb', // Serial BLE
-            '0000e0ff-0000-1000-8000-00805f9b34fb'
+            '0000e0ff-0000-1000-8000-00805f9b34fb',
+            '0000fff0-0000-1000-8000-00805f9b34fb',
+            '0000ffe0-0000-1000-8000-00805f9b34fb'
+        ];
+
+        const preferredWriteUuids = [
+            '0000ff02-0000-1000-8000-00805f9b34fb',
+            '49535343-8841-43f4-a8d4-ecbe34729bb3',
+            '49535343-1e4d-4bd9-ba61-23c647249616',
+            '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
+            '00002af1-0000-1000-8000-00805f9b34fb',
+            '0000fff2-0000-1000-8000-00805f9b34fb',
+            '0000fff1-0000-1000-8000-00805f9b34fb',
+            '0000ffe1-0000-1000-8000-00805f9b34fb'
         ];
 
         try {
@@ -1008,45 +1021,90 @@ const MobileBluetoothPrinter = {
 
             this.server = await this.device.gatt.connect();
 
-            // Find writable characteristic (prioritize ff02 / 2af1 / ISSC / Nordic)
-            const preferredUuids = [
-                '0000ff02', 'ff02', '2af1', '49535343', '6e400002', 'ae01', 'fff2', 'ffe1'
-            ];
-            const services = await this.server.getPrimaryServices();
-            let fallbackChar = null;
+            const ignoredServices = ['00001800', '00001801', '0000180a', '0000180f'];
+            const writableList = [];
+
+            let services = [];
+            try {
+                services = await this.server.getPrimaryServices();
+            } catch (svcErr) {
+                console.warn('getPrimaryServices fallback:', svcErr);
+                for (const u of optionalServices) {
+                    try {
+                        const s = await this.server.getPrimaryService(u);
+                        if (s) services.push(s);
+                    } catch (_) {}
+                }
+            }
 
             for (const s of services) {
+                if (ignoredServices.some(ig => s.uuid.toLowerCase().includes(ig))) continue;
                 try {
                     const chars = await s.getCharacteristics();
                     for (const c of chars) {
-                        if (c.properties.write || c.properties.writeWithoutResponse) {
-                            if (!fallbackChar) fallbackChar = c;
+                        const canWrite = c.properties.write || c.properties.writeWithoutResponse;
+                        if (canWrite) {
+                            let score = 10;
                             const cuuid = c.uuid.toLowerCase();
-                            if (preferredUuids.some(p => cuuid.includes(p))) {
-                                this.characteristic = c;
-                                break;
+                            const suuid = s.uuid.toLowerCase();
+
+                            if (suuid.includes('ff00') || suuid.includes('18f0') || suuid.includes('49535343') || suuid.includes('6e400001')) {
+                                score += 50;
                             }
+                            const prefIdx = preferredWriteUuids.findIndex(u => cuuid === u.toLowerCase());
+                            if (prefIdx >= 0) {
+                                score += (100 - prefIdx * 10);
+                            }
+                            if (c.properties.writeWithoutResponse) score += 5;
+
+                            writableList.push({ c, score, uuid: c.uuid });
                         }
                     }
                 } catch (e) {
                     console.warn(e);
                 }
-                if (this.characteristic) break;
             }
 
-            if (!this.characteristic) {
-                this.characteristic = fallbackChar;
+            if (!writableList.length) {
+                throw new Error('ไม่พบช่องทางส่งพิมพ์ (เครื่องพิมพ์อาจใช้ Bluetooth Classic แนะนำให้กดปุ่ม "แชร์เข้าแอป PeriPage" เพื่อพิมพ์ผ่านแอปทางการ)');
             }
 
-            if (!this.characteristic) {
-                throw new Error('เชื่อมต่อสำเร็จ แต่ไม่พบบริการพิมพ์ของเครื่องพิมพ์บลูทูธนี้');
-            }
+            writableList.sort((a, b) => b.score - a.score);
+            this.characteristic = writableList[0].c;
 
             this.isConnected = true;
-            return this.device.name || 'Bluetooth Printer';
+            return this.device.name || 'PeriPage Printer';
         } catch (err) {
             this.isConnected = false;
             throw err;
+        }
+    },
+
+    async writeRaw(bytes) {
+        if (!this.characteristic) throw new Error('Printer characteristic not ready');
+        const chunkSize = 100;
+        const noRsp = this.characteristic.properties.writeWithoutResponse;
+
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+            let tries = 0;
+            while (true) {
+                try {
+                    if (noRsp && this.characteristic.writeValueWithoutResponse) {
+                        await this.characteristic.writeValueWithoutResponse(chunk);
+                    } else if (this.characteristic.writeValueWithResponse) {
+                        await this.characteristic.writeValueWithResponse(chunk);
+                    } else {
+                        await this.characteristic.writeValue(chunk);
+                    }
+                    break;
+                } catch (err) {
+                    tries++;
+                    if (tries > 3) throw err;
+                    await new Promise(r => setTimeout(r, 60));
+                }
+            }
+            await new Promise(r => setTimeout(r, 12));
         }
     },
 
@@ -1055,24 +1113,29 @@ const MobileBluetoothPrinter = {
             await this.connect();
         }
 
+        // Standard 57mm thermal head width is 384 dots (48 bytes per row)
+        let printCanvas = canvas;
+        if (canvas.width !== 384) {
+            printCanvas = document.createElement('canvas');
+            printCanvas.width = 384;
+            printCanvas.height = Math.round(canvas.height * (384 / canvas.width));
+            const pctx = printCanvas.getContext('2d');
+            pctx.fillStyle = '#ffffff';
+            pctx.fillRect(0, 0, printCanvas.width, printCanvas.height);
+            pctx.drawImage(canvas, 0, 0, printCanvas.width, printCanvas.height);
+        }
+
         const width = 384;
-        const height = canvas.height;
-        const ctx = canvas.getContext('2d');
+        const height = printCanvas.height;
+        const ctx = printCanvas.getContext('2d');
         const imgData = ctx.getImageData(0, 0, width, height).data;
 
-        const widthBytes = Math.ceil(width / 8);
-        const rasterData = [];
-
-        const xL = widthBytes & 0xFF;
-        const xH = (widthBytes >> 8) & 0xFF;
-        const yL = height & 0xFF;
-        const yH = (height >> 8) & 0xFF;
-
-        const header = [0x1B, 0x40, 0x10, 0xFF, 0xFE, 0x01];
-        const cmdHeader = [0x1D, 0x76, 0x30, 0x00, xL, xH, yL, yH];
+        const bpr = 48; // 384 dots / 8 = 48 bytes per row
+        const packed = new Uint8Array(bpr * height);
 
         for (let y = 0; y < height; y++) {
-            for (let bx = 0; bx < widthBytes; bx++) {
+            const rowOffset = y * bpr;
+            for (let bx = 0; bx < bpr; bx++) {
                 let byteVal = 0;
                 for (let bit = 0; bit < 8; bit++) {
                     const x = bx * 8 + bit;
@@ -1082,36 +1145,56 @@ const MobileBluetoothPrinter = {
                         const g = imgData[idx + 1];
                         const b = imgData[idx + 2];
                         const a = imgData[idx + 3];
-                        const isDark = a > 128 && (0.299 * r + 0.587 * g + 0.114 * b < 165);
+                        const isDark = a > 128 && (0.299 * r + 0.587 * g + 0.114 * b < 170);
                         if (isDark) {
-                            byteVal |= (1 << (7 - bit));
+                            byteVal |= (0x80 >> bit);
                         }
                     }
                 }
-                rasterData.push(byteVal);
+                packed[rowOffset + bx] = byteVal;
             }
         }
 
-        // Paper feed footer to push sticker cleanly past tear blade
-        const footer = [0x1B, 0x64, 0x08, 0x0A, 0x0A];
+        // PeriPage Hardware Protocol Commands:
+        // 16-byte Block Reset: 10 ff fe 01 00 00 00 00 00 00 00 00 00 00 00 00
+        const cmdReset = new Uint8Array([0x10, 0xFF, 0xFE, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        // Density / Concentration: 10 ff 10 00 02 (High contrast)
+        const cmdDensity = new Uint8Array([0x10, 0xFF, 0x10, 0x00, 0x02]);
+        // Feed command: 1B 4A [dots]
+        const cmdFeed = (dots) => new Uint8Array([0x1B, 0x4A, Math.max(0, Math.min(255, dots))]);
 
-        const fullPayload = new Uint8Array([
-            ...header,
-            ...cmdHeader,
-            ...rasterData,
-            ...footer
-        ]);
+        // 1. Wake up print head & set high contrast density
+        await this.writeRaw(cmdDensity);
+        await new Promise(r => setTimeout(r, 40));
 
-        const chunkSize = 100;
-        for (let i = 0; i < fullPayload.length; i += chunkSize) {
-            const chunk = fullPayload.slice(i, i + chunkSize);
-            if (this.characteristic.properties.writeWithoutResponse) {
-                await this.characteristic.writeValueWithoutResponse(chunk);
-            } else {
-                await this.characteristic.writeValue(chunk);
-            }
-            await new Promise(r => setTimeout(r, 15));
+        // 2. Transmit in chunks of 48 rows with block reset (matches PeriPage internal buffer)
+        const rowsPerChunk = 48;
+        for (let y = 0; y < height; y += rowsPerChunk) {
+            const rows = Math.min(rowsPerChunk, height - y);
+
+            // PeriPage hardware requires reset immediately preceding each raster block
+            await this.writeRaw(cmdReset);
+            await new Promise(r => setTimeout(r, 20));
+
+            // ESC/POS GS v 0 raster header for this block
+            const header = new Uint8Array([
+                0x1D, 0x76, 0x30, 0x00,
+                bpr & 0xFF, (bpr >> 8) & 0xFF,
+                rows & 0xFF, (rows >> 8) & 0xFF
+            ]);
+            await this.writeRaw(header);
+
+            // Raster bytes for this chunk
+            const chunkData = packed.subarray(y * bpr, (y + rows) * bpr);
+            await this.writeRaw(chunkData);
         }
+
+        // 3. Feed paper out cleanly past the tear teeth
+        await this.writeRaw(cmdFeed(80));
+        await new Promise(r => setTimeout(r, 40));
+        await this.writeRaw(cmdFeed(80));
+        await new Promise(r => setTimeout(r, 40));
+        await this.writeRaw(new Uint8Array([0x0A, 0x0A, 0x1B, 0x64, 0x04]));
     }
 };
 
