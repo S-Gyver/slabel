@@ -242,9 +242,10 @@ input, textarea, .selectable-text {
 }
 
 .sticker-middle-right {
-    vertical-align: middle !important;
-    text-align: right !important;
-    width: 38px !important;
+    vertical-align: top !important;
+    text-align: center !important;
+    width: 36px !important;
+    padding-top: 1px !important;
     padding-right: 0.5mm !important;
 }
 
@@ -256,9 +257,9 @@ input, textarea, .selectable-text {
     text-align: center !important;
     user-select: none !important;
     box-sizing: border-box !important;
-    font-size: 26pt !important;
-    letter-spacing: -1px !important;
-    display: inline-block !important;
+    font-size: 21pt !important;
+    letter-spacing: -0.5px !important;
+    display: block !important;
     margin: 0 auto !important;
 }
 
@@ -391,12 +392,7 @@ input, textarea, .selectable-text {
 }
 
 .sticker-tear-line {
-    text-align: center;
-    font-size: 7.5pt;
-    color: #000000;
-    margin-top: 2mm;
-    letter-spacing: 2px;
-    font-weight: 700;
+    display: none !important;
 }
 
 /* ==============================================================================
