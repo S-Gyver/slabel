@@ -1193,12 +1193,8 @@ const MobileBluetoothPrinter = {
             await this.writeRaw(chunkData);
         }
 
-        // 3. Feed paper out cleanly past the tear teeth
+        // 3. Tear Feed: Fixed exactly 10mm (80 dots at 203 DPI) per user setting
         await this.writeRaw(cmdFeed(80));
-        await new Promise(r => setTimeout(r, 40));
-        await this.writeRaw(cmdFeed(80));
-        await new Promise(r => setTimeout(r, 40));
-        await this.writeRaw(new Uint8Array([0x0A, 0x0A, 0x1B, 0x64, 0x04]));
     }
 };
 

@@ -178,7 +178,7 @@ input, textarea, .selectable-text {
     width: 57mm;
     max-width: 57mm;
     min-height: 48mm;
-    padding: 2.5mm 5mm 3mm 5mm;
+    padding: 2.5mm 4.5mm 1mm 4.5mm;
     font-size: 7.2pt;
     line-height: 1.3;
     font-weight: 700;
@@ -373,8 +373,9 @@ input, textarea, .selectable-text {
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    margin-top: 3mm !important;
-    margin-bottom: 2mm !important;
+    margin-top: 2mm !important;
+    margin-bottom: 0mm !important;
+    padding-bottom: 0mm !important;
     min-height: 20mm !important;
 }
 
