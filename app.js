@@ -1339,3 +1339,106 @@ function downloadMobileStickerImage(canvas, fileName) {
     document.body.removeChild(link);
 }
 
+// ==============================================================================
+// 10. PWA INSTALLATION & SERVICE WORKER
+// ==============================================================================
+let deferredPwaPrompt = null;
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => {
+            console.log('SW registration error:', err);
+        });
+    });
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the default mini-infobar from appearing on mobile
+    e.preventDefault();
+    deferredPwaPrompt = e;
+    console.log('beforeinstallprompt captured');
+    const btn = document.getElementById('btnInstallApp');
+    if (btn) btn.classList.remove('hidden');
+});
+
+window.addEventListener('appinstalled', () => {
+    deferredPwaPrompt = null;
+    const btn = document.getElementById('btnInstallApp');
+    if (btn) {
+        btn.innerHTML = `<i class="bi bi-check-circle-fill"></i> <span>ติดตั้งแล้ว</span>`;
+        btn.classList.add('opacity-60');
+        btn.disabled = true;
+    }
+    const card = document.getElementById('settingsInstallCard');
+    if (card) {
+        card.innerHTML = `
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                    <i class="bi bi-check-lg text-lg"></i>
+                </div>
+                <div>
+                    <div class="text-xs font-bold text-slate-900">ติดตั้งแอปเรียบร้อยแล้ว</div>
+                    <div class="text-[10.5px] text-slate-500">สามารถเปิดใช้งานจากหน้าจอหลักได้ทันที</div>
+                </div>
+            </div>`;
+    }
+});
+
+// Check if running in standalone mode (already installed)
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+    const btn = document.getElementById('btnInstallApp');
+    if (btn) btn.classList.add('hidden');
+}
+
+async function triggerPwaInstall() {
+    if (deferredPwaPrompt) {
+        deferredPwaPrompt.prompt();
+        const { outcome } = await deferredPwaPrompt.userChoice;
+        if (outcome === 'accepted') {
+            deferredPwaPrompt = null;
+        }
+        return;
+    }
+
+    const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+    const modal = document.getElementById('pwaInstallModal');
+    const content = document.getElementById('pwaModalContent');
+
+    if (modal && content) {
+        if (isIos) {
+            content.innerHTML = `
+                <div class="p-3 bg-blue-50 border border-blue-100 rounded-2xl space-y-2">
+                    <div class="font-bold text-blue-900 flex items-center gap-1.5">
+                        <i class="bi bi-apple"></i>
+                        <span>วิธีติดตั้งบน iPhone / iPad (Safari):</span>
+                    </div>
+                    <ol class="list-decimal list-inside space-y-1.5 text-[11.5px] text-slate-700 pl-0.5">
+                        <li>แตะที่ปุ่มแชร์ <strong><i class="bi bi-box-arrow-up text-blue-600"></i> (Share)</strong> แถบด้านล่างของ Safari</li>
+                        <li>เลื่อนลงมาแล้วเลือก <strong><i class="bi bi-plus-square text-blue-600"></i> "เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</strong></li>
+                        <li>แตะ <strong>"เพิ่ม" (Add)</strong> มุมบนขวาเพื่อเสร็จสิ้น</li>
+                    </ol>
+                </div>`;
+        } else {
+            content.innerHTML = `
+                <div class="p-3 bg-blue-50 border border-blue-100 rounded-2xl space-y-2">
+                    <div class="font-bold text-blue-900 flex items-center gap-1.5">
+                        <i class="bi bi-android2 text-green-600"></i>
+                        <span>วิธีติดตั้งบน Android (Chrome / Edge):</span>
+                    </div>
+                    <ol class="list-decimal list-inside space-y-1.5 text-[11.5px] text-slate-700 pl-0.5">
+                        <li>แตะที่เมนู <strong>จุด 3 จุด (⋮)</strong> มุมบนขวาของเบราว์เซอร์</li>
+                        <li>เลือก <strong><i class="bi bi-download text-blue-600"></i> "ติดตั้งแอป" (Install app)</strong> หรือ <strong>"เพิ่มไปยังหน้าจอหลัก"</strong></li>
+                        <li>กดยืนยัน <strong>"ติดตั้ง"</strong> ตัวแอปจะไปอยู่ที่หน้าจอมือถือทันที</li>
+                    </ol>
+                </div>`;
+        }
+        modal.classList.remove('hidden');
+    }
+}
+
+function closePwaInstallModal() {
+    const modal = document.getElementById('pwaInstallModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+
