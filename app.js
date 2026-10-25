@@ -968,20 +968,20 @@ function saveAppPreferences() {
 // 8. VARIANT & PURE SIZE EXTRACTION (S, M, L, XL, XXL, FREE SIZE)
 // ==============================================================================
 function extractPureSize(raw) {
-    if (!raw) return 'Free Size';
+    if (!raw) return 'Free';
     let str = String(raw).trim();
-    if (!str || str === '-' || str === 'ไม่มี') return 'Free Size';
+    if (!str || str === '-' || str === 'ไม่มี') return 'Free';
 
     // ตัดส่วนขยายความในวงเล็บ เช่น (อก38"), [เอว30], (รอบอก 40 นิ้ว)
     str = str.replace(/[\(\[].*?[\)\]]/g, ' ').trim();
     // ตัดข้อความขยายความที่ตามหลัง เช่น "อก 38", "รอบอก 40", "เอว 32"
     str = str.replace(/(?:อก|รอบอก|เอว|สะโพก|ความยาว|ยาว).*$/i, '').trim();
 
-    if (!str) return 'Free Size';
+    if (!str) return 'Free';
 
     // 1. ตรวจหาคำว่า Free Size / ฟรีไซส์ / One Size / F
     if (/^(free\s*size|freesize|free-size|one\s*size|onesize|free|ฟรีไซส์|ฟรีไซต์|f)$/i.test(str)) {
-        return 'Free Size';
+        return 'Free';
     }
 
     // 2. ตรวจหาช่วงไซส์เสื้อผ้ามาตรฐาน เช่น S-M, M-L, L-XL, XL-2XL, M-XXL
@@ -995,7 +995,7 @@ function extractPureSize(raw) {
     const match = str.match(sizeRegex);
     if (match) {
         const found = match[1].toUpperCase();
-        if (found === 'F') return 'Free Size';
+        if (found === 'F') return 'Free';
         return found;
     }
 
@@ -1007,11 +1007,11 @@ function extractPureSize(raw) {
 
     // 5. หากมีคำว่า free หรือ ฟรี
     if (/free|ฟรี/i.test(str)) {
-        return 'Free Size';
+        return 'Free';
     }
 
-    // 6. ถ้าไม่ได้ลงไซส์ไว้ หรือเป็นข้อความอื่นที่ไม่ใช่ไซส์ ให้เป็น 'Free Size' ตามคำขอ
-    return 'Free Size';
+    // 6. ถ้าไม่ได้ลงไซส์ไว้ หรือเป็นข้อความอื่นที่ไม่ใช่ไซส์ ให้เป็น 'Free' ตามคำขอ
+    return 'Free';
 }
 
 function extractPureSizeCandidate(raw) {
@@ -1025,7 +1025,7 @@ function extractPureSizeCandidate(raw) {
     if (!str) return null;
 
     if (/^(free\s*size|freesize|free-size|one\s*size|onesize|free|ฟรีไซส์|ฟรีไซต์|f)$/i.test(str)) {
-        return 'Free Size';
+        return 'Free';
     }
 
     const rangeMatch = str.match(/\b([XSML]{1,3}\s*-\s*(?:[XSML]{1,3}|[2-5]XL))\b/i);
@@ -1037,7 +1037,7 @@ function extractPureSizeCandidate(raw) {
     const match = str.match(sizeRegex);
     if (match) {
         const found = match[1].toUpperCase();
-        if (found === 'F') return 'Free Size';
+        if (found === 'F') return 'Free';
         return found;
     }
 
@@ -1047,7 +1047,7 @@ function extractPureSizeCandidate(raw) {
     }
 
     if (/free|ฟรี/i.test(str)) {
-        return 'Free Size';
+        return 'Free';
     }
 
     return null;
@@ -1055,7 +1055,7 @@ function extractPureSizeCandidate(raw) {
 
 function splitVariantColorAndSize(rawVariant) {
     const str = String(rawVariant || '').trim();
-    if (!str) return { color: '', size: 'Free Size' };
+    if (!str) return { color: '', size: 'Free' };
 
     if (str.includes(',') || str.includes('/') || str.includes(' - ') || str.includes('|')) {
         const parts = str.split(/[,/|]+|(?:\s+-\s+)/).map(s => s.trim()).filter(Boolean);
@@ -1078,7 +1078,7 @@ function splitVariantColorAndSize(rawVariant) {
         return { color: '', size: candidate };
     }
 
-    return { color: str, size: 'Free Size' };
+    return { color: str, size: 'Free' };
 }
 
 function extractColor(variantStr) {
@@ -1088,7 +1088,7 @@ function extractColor(variantStr) {
 }
 
 function extractSize(variantStr) {
-    if (!variantStr) return 'Free Size';
+    if (!variantStr) return 'Free';
     const parsed = splitVariantColorAndSize(variantStr);
     return parsed.size || extractPureSize(variantStr);
 }
