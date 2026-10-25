@@ -351,9 +351,10 @@ input, textarea, .selectable-text {
 
 .sticker-barcode-wrapper svg {
     max-width: 100% !important;
-    height: 10mm !important;
+    height: 14mm !important;
     display: block;
     margin: 0 auto;
+    shape-rendering: crispEdges !important;
 }
 
 /* ==============================================================================

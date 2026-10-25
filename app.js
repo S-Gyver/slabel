@@ -495,10 +495,10 @@ function renderBarcode(skuCode) {
     try {
         JsBarcode(svg, skuCode, {
             format: "CODE128",
-            width: 1.4,
-            height: 38,
+            width: 1.6,
+            height: 85,
             displayValue: false,
-            margin: 0,
+            margin: 4,
             background: "#ffffff",
             lineColor: "#000000"
         });
