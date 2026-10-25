@@ -220,47 +220,41 @@ input, textarea, .selectable-text {
     font-weight: 700;
 }
 
-/* Middle Row Table (Rock-solid HTML2Canvas & Thermal Print Alignment) */
-.sticker-middle-table {
+/* Middle Row Container & Absolute Centered Big Size S (Locked between top and bottom red lines) */
+.sticker-middle-container {
+    position: relative !important;
     width: 100% !important;
-    border-collapse: collapse !important;
-    border: none !important;
-    margin: 1.5px 0 3.5px 0 !important;
+    margin: 1px 0 2.5px 0 !important;
     padding: 0 !important;
-}
-
-.sticker-middle-table tr,
-.sticker-middle-table td {
-    border: none !important;
-    padding: 0 !important;
+    clear: both !important;
+    box-sizing: border-box !important;
 }
 
 .sticker-middle-left {
-    vertical-align: middle !important;
+    width: 100% !important;
+    padding-right: 42px !important;
+    box-sizing: border-box !important;
     text-align: left !important;
-    padding-right: 3px !important;
-}
-
-.sticker-middle-right {
-    vertical-align: top !important;
-    text-align: center !important;
-    width: 44px !important;
-    padding-top: 0px !important;
-    padding-right: 0.5mm !important;
 }
 
 .sticker-big-size {
+    position: absolute !important;
+    right: 0.5mm !important;
+    top: 2px !important;
+    width: 40px !important;
+    height: 38px !important;
     font-weight: 900 !important;
-    font-family: 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    font-family: 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     color: #000000 !important;
-    line-height: 0.95 !important;
+    line-height: 38px !important;
     text-align: center !important;
     user-select: none !important;
     box-sizing: border-box !important;
-    font-size: 29pt !important;
+    font-size: 28pt !important;
     letter-spacing: -0.5px !important;
     display: block !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .sticker-line-care {

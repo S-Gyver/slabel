@@ -53,7 +53,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css?v=20261025_06">
+    <link rel="stylesheet" href="style.css?v=20261025_07">
 </head>
 
 <body class="bg-slate-100 text-slate-800 antialiased">
@@ -319,30 +319,26 @@
                     </div>
 
                     <!-- 3 & 4. สี, ขนาด / ไซต์ และวิธีใช้ พร้อมป้ายตัวใหญ่ด้านขวา -->
-                    <table class="sticker-middle-table">
-                        <tr>
-                            <td class="sticker-middle-left">
-                                <div id="stickerLineColor" class="sticker-line">
-                                    <span class="sticker-tag-lbl">สี :</span>
-                                    <span id="lblColor" class="sticker-val">ทอง</span>
-                                </div>
-                                <div class="sticker-line">
-                                    <span class="sticker-tag-lbl">ขนาด / ไซต์ :</span>
-                                    <span id="lblVariant" class="sticker-val">S</span>
-                                </div>
-                                <div class="sticker-line">
-                                    <span class="sticker-tag-lbl">วิธีใช้ :</span>
-                                    <span id="lblUsage" class="sticker-val">สำหรับสวมใส่</span>
-                                </div>
-                            </td>
-                            <td class="sticker-middle-right">
-                                <!-- ป้ายตัวอักษรไซส์ตัวใหญ่เด่นชัด (S / M / L / XL) -->
-                                <div id="stickerBigSize" class="sticker-big-size">
-                                    S
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
+                    <div class="sticker-middle-container">
+                        <div class="sticker-middle-left">
+                            <div id="stickerLineColor" class="sticker-line">
+                                <span class="sticker-tag-lbl">สี :</span>
+                                <span id="lblColor" class="sticker-val">ทอง</span>
+                            </div>
+                            <div class="sticker-line">
+                                <span class="sticker-tag-lbl">ขนาด / ไซต์ :</span>
+                                <span id="lblVariant" class="sticker-val">S</span>
+                            </div>
+                            <div class="sticker-line">
+                                <span class="sticker-tag-lbl">วิธีใช้ :</span>
+                                <span id="lblUsage" class="sticker-val">สำหรับสวมใส่</span>
+                            </div>
+                        </div>
+                        <!-- ป้ายตัวอักษรไซส์ตัวใหญ่เด่นชัด (S / M / L / XL) -->
+                        <div id="stickerBigSize" class="sticker-big-size">
+                            S
+                        </div>
+                    </div>
 
                     <!-- 5. ข้อแนะนำ -->
                     <div class="sticker-line-care">
@@ -522,7 +518,7 @@
     </div>
 
     <!-- App Logic -->
-    <script src="app.js?v=20261025_11"></script>
+    <script src="app.js?v=20261025_12"></script>
 </body>
 
 </html>
