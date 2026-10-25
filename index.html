@@ -53,7 +53,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css?v=20261025_07">
+    <link rel="stylesheet" href="style.css?v=20261025_08">
 </head>
 
 <body class="bg-slate-100 text-slate-800 antialiased">
@@ -318,8 +318,8 @@
                         <span id="lblProductType" class="sticker-val">เสื้อผ้าแฟชั่นผู้หญิง</span>
                     </div>
 
-                    <!-- 3 & 4. สี, ขนาด / ไซต์ และวิธีใช้ พร้อมป้ายตัวใหญ่ด้านขวา -->
-                    <div class="sticker-middle-container">
+                    <!-- 3 & 4. สี, ขนาด / ไซต์ และวิธีใช้ พร้อมป้ายตัวใหญ่ด้านขวา (เหมือนหน้าเว็บ) -->
+                    <div class="sticker-middle-row">
                         <div class="sticker-middle-left">
                             <div id="stickerLineColor" class="sticker-line">
                                 <span class="sticker-tag-lbl">สี :</span>
@@ -335,7 +335,7 @@
                             </div>
                         </div>
                         <!-- ป้ายตัวอักษรไซส์ตัวใหญ่เด่นชัด (S / M / L / XL) -->
-                        <div id="stickerBigSize" class="sticker-big-size">
+                        <div id="stickerBigSize" class="sticker-big-size" title="ไซส์สินค้า">
                             S
                         </div>
                     </div>
@@ -375,10 +375,10 @@
                             <span>SKU: </span>
                             <strong id="lblSkuText">WFC-SKT-MNS-001-01</strong>
                         </div>
-                        <div class="sticker-barcode-wrapper">
+                        <div id="barcodeWrapper" class="sticker-barcode-wrapper">
                             <svg id="barcodeSvg"></svg>
                         </div>
-                        <div class="sticker-qr-wrapper flex justify-center py-0.5">
+                        <div id="qrcodeWrapper" class="sticker-qr-wrapper">
                             <div id="qrcodeDiv"></div>
                         </div>
                     </div>
@@ -518,7 +518,7 @@
     </div>
 
     <!-- App Logic -->
-    <script src="app.js?v=20261025_12"></script>
+    <script src="app.js?v=20261025_13"></script>
 </body>
 
 </html>

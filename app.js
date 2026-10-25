@@ -444,22 +444,26 @@ function updateStickerPreview(product) {
             lblBigSize.innerText = size.trim();
 
             const cleanUpper = size.trim().toUpperCase();
-            if (cleanUpper.length <= 1) { // S, M, L
-                lblBigSize.style.fontSize = '28pt';
-                lblBigSize.style.lineHeight = '38px';
-                lblBigSize.style.top = '2px';
-            } else if (cleanUpper.length <= 2) { // XL, 2X
-                lblBigSize.style.fontSize = '20pt';
-                lblBigSize.style.lineHeight = '38px';
-                lblBigSize.style.top = '2px';
-            } else if (cleanUpper.length <= 3) { // XXL, 3XL
-                lblBigSize.style.fontSize = '16pt';
-                lblBigSize.style.lineHeight = '38px';
-                lblBigSize.style.top = '2px';
-            } else {
-                lblBigSize.style.fontSize = '12pt';
-                lblBigSize.style.lineHeight = '38px';
-                lblBigSize.style.top = '2px';
+            if (cleanUpper.length <= 1) { // S, M, L, F
+                lblBigSize.style.fontSize = '38pt';
+                lblBigSize.style.lineHeight = '0.85';
+                lblBigSize.style.letterSpacing = '-1px';
+            } else if (cleanUpper.length <= 2) { // XL, XS, 2X, 3X
+                lblBigSize.style.fontSize = '30pt';
+                lblBigSize.style.lineHeight = '0.88';
+                lblBigSize.style.letterSpacing = '-1px';
+            } else if (cleanUpper.length <= 3) { // 2XL, XXL, 3XL, 4XL
+                lblBigSize.style.fontSize = '24pt';
+                lblBigSize.style.lineHeight = '0.90';
+                lblBigSize.style.letterSpacing = '-0.8px';
+            } else if (cleanUpper.length <= 5) { // M-XXL, 5XL, S-M
+                lblBigSize.style.fontSize = '18pt';
+                lblBigSize.style.lineHeight = '0.95';
+                lblBigSize.style.letterSpacing = '-0.5px';
+            } else { // Free Size, One Size
+                lblBigSize.style.fontSize = '13pt';
+                lblBigSize.style.lineHeight = '1.02';
+                lblBigSize.style.letterSpacing = '-0.3px';
             }
         } else {
             lblBigSize.classList.add('hidden');
@@ -518,8 +522,8 @@ function renderBarcode(skuCode) {
             try {
                 new QRCode(qrcodeDiv, {
                     text: skuCode,
-                    width: 140,
-                    height: 140,
+                    width: 58,
+                    height: 58,
                     colorDark: '#000000',
                     colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.M
