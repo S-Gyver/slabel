@@ -445,17 +445,17 @@ function updateStickerPreview(product) {
 
             const cleanUpper = size.trim().toUpperCase();
             if (cleanUpper.length <= 1) { // S, M, L
-                lblBigSize.style.fontSize = '38pt';
-                lblBigSize.style.lineHeight = '0.85';
+                lblBigSize.style.fontSize = '26pt';
+                lblBigSize.style.lineHeight = '1';
             } else if (cleanUpper.length <= 2) { // XL, 2X
-                lblBigSize.style.fontSize = '30pt';
-                lblBigSize.style.lineHeight = '0.88';
+                lblBigSize.style.fontSize = '20pt';
+                lblBigSize.style.lineHeight = '1';
             } else if (cleanUpper.length <= 3) { // XXL, 3XL
-                lblBigSize.style.fontSize = '24pt';
-                lblBigSize.style.lineHeight = '0.90';
+                lblBigSize.style.fontSize = '16pt';
+                lblBigSize.style.lineHeight = '1';
             } else {
-                lblBigSize.style.fontSize = '18pt';
-                lblBigSize.style.lineHeight = '0.95';
+                lblBigSize.style.fontSize = '13pt';
+                lblBigSize.style.lineHeight = '1';
             }
         } else {
             lblBigSize.classList.add('hidden');

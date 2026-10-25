@@ -220,39 +220,46 @@ input, textarea, .selectable-text {
     font-weight: 700;
 }
 
-/* Middle Row Layout (Flex Row Nowrap - Left Info + Big Size on Right) */
-.sticker-middle-row {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    flex-wrap: nowrap !important;
-    margin: 1px 0 !important;
+/* Middle Row Table (Rock-solid HTML2Canvas & Thermal Print Alignment) */
+.sticker-middle-table {
     width: 100% !important;
-    box-sizing: border-box !important;
+    border-collapse: collapse !important;
+    border: none !important;
+    margin: 1px 0 2px 0 !important;
+    padding: 0 !important;
+}
+
+.sticker-middle-table tr,
+.sticker-middle-table td {
+    border: none !important;
+    padding: 0 !important;
 }
 
 .sticker-middle-left {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    padding-right: 2px !important;
+    vertical-align: middle !important;
+    text-align: left !important;
+    padding-right: 3px !important;
+}
+
+.sticker-middle-right {
+    vertical-align: middle !important;
+    text-align: right !important;
+    width: 38px !important;
+    padding-right: 0.5mm !important;
 }
 
 .sticker-big-size {
-    flex: 0 0 auto !important;
     font-weight: 900 !important;
     font-family: 'Arial Black', Impact, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
     color: #000000 !important;
-    line-height: 0.88 !important;
-    text-align: right !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-end !important;
+    line-height: 1 !important;
+    text-align: center !important;
     user-select: none !important;
     box-sizing: border-box !important;
-    padding-right: 0.5mm !important;
-    font-size: 38pt !important;
+    font-size: 26pt !important;
     letter-spacing: -1px !important;
+    display: inline-block !important;
+    margin: 0 auto !important;
 }
 
 .sticker-line-care {
