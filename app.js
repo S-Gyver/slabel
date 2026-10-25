@@ -988,33 +988,17 @@ const MobileBluetoothPrinter = {
 
         const optionalServices = [
             '0000ff00-0000-1000-8000-00805f9b34fb', // PeriPage primary
-            '000018f0-0000-1000-8000-00805f9b34fb', // Serial BLE
-            '0000ae30-0000-1000-8000-00805f9b34fb',
-            '0000fff0-0000-1000-8000-00805f9b34fb',
-            '0000ffe0-0000-1000-8000-00805f9b34fb',
-            '0000fee7-0000-1000-8000-00805f9b34fb',
+            '0000ff02-0000-1000-8000-00805f9b34fb',
             '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC Transparent
             '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART
-            'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
+            '000018f0-0000-1000-8000-00805f9b34fb', // Serial BLE
+            '0000e0ff-0000-1000-8000-00805f9b34fb'
         ];
 
         try {
             this.device = await navigator.bluetooth.requestDevice({
-                filters: [
-                    { namePrefix: 'PeriPage' },
-                    { namePrefix: 'Peripage' },
-                    { namePrefix: 'PPG' },
-                    { namePrefix: 'A6' },
-                    { namePrefix: 'A8' },
-                    { namePrefix: 'A9' },
-                    { namePrefix: 'PP' }
-                ],
+                acceptAllDevices: true,
                 optionalServices: optionalServices
-            }).catch(() => {
-                return navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: optionalServices
-                });
             });
 
             this.device.addEventListener('gattserverdisconnected', () => {
@@ -1024,89 +1008,45 @@ const MobileBluetoothPrinter = {
 
             this.server = await this.device.gatt.connect();
 
-            const preferredWriteUuids = [
-                '0000ff02-0000-1000-8000-00805f9b34fb', // PeriPage standard
-                '00002af1-0000-1000-8000-00805f9b34fb',
-                '49535343-8841-43f4-a8d4-ecbe34729bb3',
-                '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
-                '0000ae01-0000-1000-8000-00805f9b34fb',
-                '0000fff2-0000-1000-8000-00805f9b34fb',
-                '0000fff1-0000-1000-8000-00805f9b34fb',
-                '0000ffe1-0000-1000-8000-00805f9b34fb'
+            // Find writable characteristic (prioritize ff02 / 2af1 / ISSC / Nordic)
+            const preferredUuids = [
+                '0000ff02', 'ff02', '2af1', '49535343', '6e400002', 'ae01', 'fff2', 'ffe1'
             ];
-
-            const ignoredServices = ['00001800', '00001801', '0000180a', '0000180f'];
-            const writableList = [];
             const services = await this.server.getPrimaryServices();
+            let fallbackChar = null;
 
             for (const s of services) {
-                if (ignoredServices.some(ig => s.uuid.toLowerCase().includes(ig))) continue;
                 try {
                     const chars = await s.getCharacteristics();
                     for (const c of chars) {
-                        const canWrite = c.properties.write || c.properties.writeWithoutResponse;
-                        if (canWrite) {
-                            let score = 10;
+                        if (c.properties.write || c.properties.writeWithoutResponse) {
+                            if (!fallbackChar) fallbackChar = c;
                             const cuuid = c.uuid.toLowerCase();
-                            const suuid = s.uuid.toLowerCase();
-
-                            if (suuid.includes('ff00') || suuid.includes('18f0') || suuid.includes('49535343') || suuid.includes('6e400001')) {
-                                score += 50;
+                            if (preferredUuids.some(p => cuuid.includes(p))) {
+                                this.characteristic = c;
+                                break;
                             }
-                            const prefIdx = preferredWriteUuids.findIndex(u => cuuid === u.toLowerCase());
-                            if (prefIdx >= 0) {
-                                score += (100 - prefIdx * 10);
-                            }
-                            if (c.properties.writeWithoutResponse) score += 5;
-
-                            writableList.push({ c, score, uuid: c.uuid });
                         }
                     }
                 } catch (e) {
                     console.warn(e);
                 }
+                if (this.characteristic) break;
             }
 
-            if (!writableList.length) {
-                throw new Error('ไม่พบช่องทางส่งพิมพ์ (เครื่องพิมพ์อาจใช้ Bluetooth Classic แนะนำให้กดปุ่ม "แชร์เข้าแอป PeriPage" เพื่อพิมพ์ผ่านแอปทางการ)');
+            if (!this.characteristic) {
+                this.characteristic = fallbackChar;
             }
 
-            writableList.sort((a, b) => b.score - a.score);
-            this.characteristic = writableList[0].c;
+            if (!this.characteristic) {
+                throw new Error('เชื่อมต่อสำเร็จ แต่ไม่พบบริการพิมพ์ของเครื่องพิมพ์บลูทูธนี้');
+            }
 
             this.isConnected = true;
-            return this.device.name || 'PeriPage Printer';
+            return this.device.name || 'Bluetooth Printer';
         } catch (err) {
             this.isConnected = false;
             throw err;
-        }
-    },
-
-    async writeRaw(bytes) {
-        if (!this.characteristic) throw new Error('Printer characteristic not ready');
-        const chunkSize = 100;
-        const noRsp = this.characteristic.properties.writeWithoutResponse;
-
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-            const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-            let tries = 0;
-            while (true) {
-                try {
-                    if (noRsp && this.characteristic.writeValueWithoutResponse) {
-                        await this.characteristic.writeValueWithoutResponse(chunk);
-                    } else if (this.characteristic.writeValueWithResponse) {
-                        await this.characteristic.writeValueWithResponse(chunk);
-                    } else {
-                        await this.characteristic.writeValue(chunk);
-                    }
-                    break;
-                } catch (err) {
-                    tries++;
-                    if (tries > 3) throw err;
-                    await new Promise(r => setTimeout(r, 60));
-                }
-            }
-            await new Promise(r => setTimeout(r, 12));
         }
     },
 
@@ -1120,12 +1060,19 @@ const MobileBluetoothPrinter = {
         const ctx = canvas.getContext('2d');
         const imgData = ctx.getImageData(0, 0, width, height).data;
 
-        const bpr = 48; // 384 dots / 8 = 48 bytes per row
-        const packed = new Uint8Array(bpr * height);
+        const widthBytes = Math.ceil(width / 8);
+        const rasterData = [];
+
+        const xL = widthBytes & 0xFF;
+        const xH = (widthBytes >> 8) & 0xFF;
+        const yL = height & 0xFF;
+        const yH = (height >> 8) & 0xFF;
+
+        const header = [0x1B, 0x40, 0x10, 0xFF, 0xFE, 0x01];
+        const cmdHeader = [0x1D, 0x76, 0x30, 0x00, xL, xH, yL, yH];
 
         for (let y = 0; y < height; y++) {
-            const rowOffset = y * bpr;
-            for (let bx = 0; bx < bpr; bx++) {
+            for (let bx = 0; bx < widthBytes; bx++) {
                 let byteVal = 0;
                 for (let bit = 0; bit < 8; bit++) {
                     const x = bx * 8 + bit;
@@ -1137,49 +1084,34 @@ const MobileBluetoothPrinter = {
                         const a = imgData[idx + 3];
                         const isDark = a > 128 && (0.299 * r + 0.587 * g + 0.114 * b < 165);
                         if (isDark) {
-                            byteVal |= (0x80 >> bit);
+                            byteVal |= (1 << (7 - bit));
                         }
                     }
                 }
-                packed[rowOffset + bx] = byteVal;
+                rasterData.push(byteVal);
             }
         }
 
-        // PeriPage Protocol Command Definitions:
-        const cmdReset = new Uint8Array([0x10, 0xFF, 0xFE, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-        const cmdDensity = new Uint8Array([0x10, 0xFF, 0x10, 0x00, 0x02]);
-        const cmdFeed = (dots) => new Uint8Array([0x1B, 0x4A, Math.max(0, Math.min(255, dots))]);
+        // Paper feed footer to push sticker cleanly past tear blade
+        const footer = [0x1B, 0x64, 0x08, 0x0A, 0x0A];
 
-        // 1. Set concentration/density
-        await this.writeRaw(cmdDensity);
-        await new Promise(r => setTimeout(r, 40));
+        const fullPayload = new Uint8Array([
+            ...header,
+            ...cmdHeader,
+            ...rasterData,
+            ...footer
+        ]);
 
-        // 2. Transmit in chunks of 48 rows with block reset (matches PeriPage internal buffer)
-        const rowsPerChunk = 48;
-        for (let y = 0; y < height; y += rowsPerChunk) {
-            const rows = Math.min(rowsPerChunk, height - y);
-
-            // Reset immediately before each raster block
-            await this.writeRaw(cmdReset);
-            await new Promise(r => setTimeout(r, 20));
-
-            // ESC/POS GS v 0 raster header for this block
-            const header = new Uint8Array([
-                0x1D, 0x76, 0x30, 0x00,
-                bpr & 0xFF, (bpr >> 8) & 0xFF,
-                rows & 0xFF, (rows >> 8) & 0xFF
-            ]);
-            await this.writeRaw(header);
-
-            // Raster bytes for this chunk
-            const chunkData = packed.subarray(y * bpr, (y + rows) * bpr);
-            await this.writeRaw(chunkData);
+        const chunkSize = 100;
+        for (let i = 0; i < fullPayload.length; i += chunkSize) {
+            const chunk = fullPayload.slice(i, i + chunkSize);
+            if (this.characteristic.properties.writeWithoutResponse) {
+                await this.characteristic.writeValueWithoutResponse(chunk);
+            } else {
+                await this.characteristic.writeValue(chunk);
+            }
+            await new Promise(r => setTimeout(r, 15));
         }
-
-        // 3. Feed paper out past tear teeth
-        await this.writeRaw(cmdFeed(80));
-        await new Promise(r => setTimeout(r, 30));
-        await this.writeRaw(cmdFeed(60));
     }
 };
 
@@ -1196,10 +1128,19 @@ async function triggerMobileBluetoothPrint() {
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<div class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div> <span>กำลังส่งพิมพ์บลูทูธ...</span>`;
+        btn.innerHTML = `<div class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div> <span>กำลังเชื่อมต่อบลูทูธ...</span>`;
     }
 
     try {
+        // 1. MUST CONNECT FIRST to preserve user gesture activation for Web Bluetooth!
+        if (!MobileBluetoothPrinter.isConnected || !MobileBluetoothPrinter.characteristic) {
+            await MobileBluetoothPrinter.connect();
+        }
+
+        if (btn) {
+            btn.innerHTML = `<div class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div> <span>กำลังสร้างรูปพิมพ์...</span>`;
+        }
+
         const countInput = document.getElementById('printCountInput');
         const printCopies = Math.max(1, parseInt(countInput?.value, 10) || 1);
 
@@ -1213,6 +1154,10 @@ async function triggerMobileBluetoothPrint() {
             logging: false
         });
 
+        if (btn) {
+            btn.innerHTML = `<div class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div> <span>กำลังส่งพิมพ์บลูทูธ...</span>`;
+        }
+
         for (let i = 0; i < printCopies; i++) {
             await MobileBluetoothPrinter.printRasterImage(canvas);
             if (i < printCopies - 1) {
@@ -1223,7 +1168,9 @@ async function triggerMobileBluetoothPrint() {
         alert(`✅ พิมพ์ฉลากออกเครื่องพิมพ์บลูทูธเรียบร้อยแล้ว (${printCopies} ดวง, ไม่มีลายน้ำ 100%)`);
     } catch (err) {
         console.error('Mobile Bluetooth Print Error:', err);
-        if (err.name !== 'NotFoundError') {
+        if (err.name === 'NotFoundError') {
+            console.log('Bluetooth selection cancelled by user');
+        } else {
             alert('ไม่สามารถพิมพ์ผ่านบลูทูธได้: ' + (err.message || err) + '\n\n💡 แนะนำ: กดปุ่ม "แชร์เข้าแอป PeriPage" เพื่อพิมพ์ผ่านแอปแท้ฟรี ไม่มีลายน้ำ');
         }
     } finally {
