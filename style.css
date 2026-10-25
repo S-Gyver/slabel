@@ -365,8 +365,8 @@ input, textarea, .selectable-text {
     user-select: none !important;
     box-sizing: border-box !important;
     padding-right: 0.5mm !important;
-    font-size: 38pt !important;
-    letter-spacing: -1px !important;
+    font-size: 38pt;
+    letter-spacing: -1px;
 }
 
 .size-57roll .sticker-qr-wrapper {

@@ -444,26 +444,30 @@ function updateStickerPreview(product) {
             lblBigSize.innerText = size.trim();
 
             const cleanUpper = size.trim().toUpperCase();
-            if (cleanUpper.length <= 1) { // S, M, L, F
-                lblBigSize.style.fontSize = '38pt';
-                lblBigSize.style.lineHeight = '0.85';
-                lblBigSize.style.letterSpacing = '-1px';
+            if (cleanUpper === 'FREE') {
+                lblBigSize.style.setProperty('font-size', '14pt', 'important');
+                lblBigSize.style.setProperty('line-height', '0.95', 'important');
+                lblBigSize.style.setProperty('letter-spacing', '-0.5px', 'important');
+            } else if (cleanUpper.length <= 1) { // S, M, L, F
+                lblBigSize.style.setProperty('font-size', '38pt', 'important');
+                lblBigSize.style.setProperty('line-height', '0.85', 'important');
+                lblBigSize.style.setProperty('letter-spacing', '-1px', 'important');
             } else if (cleanUpper.length <= 2) { // XL, XS, 2X, 3X
-                lblBigSize.style.fontSize = '30pt';
-                lblBigSize.style.lineHeight = '0.88';
-                lblBigSize.style.letterSpacing = '-1px';
+                lblBigSize.style.setProperty('font-size', '30pt', 'important');
+                lblBigSize.style.setProperty('line-height', '0.88', 'important');
+                lblBigSize.style.setProperty('letter-spacing', '-1px', 'important');
             } else if (cleanUpper.length <= 3) { // 2XL, XXL, 3XL, 4XL
-                lblBigSize.style.fontSize = '24pt';
-                lblBigSize.style.lineHeight = '0.90';
-                lblBigSize.style.letterSpacing = '-0.8px';
-            } else if (cleanUpper.length <= 5) { // Free, M-XXL, 5XL, S-M
-                lblBigSize.style.fontSize = '16pt';
-                lblBigSize.style.lineHeight = '0.95';
-                lblBigSize.style.letterSpacing = '-0.6px';
+                lblBigSize.style.setProperty('font-size', '24pt', 'important');
+                lblBigSize.style.setProperty('line-height', '0.90', 'important');
+                lblBigSize.style.setProperty('letter-spacing', '-0.8px', 'important');
+            } else if (cleanUpper.length <= 5) { // M-XXL, 5XL, S-M
+                lblBigSize.style.setProperty('font-size', '15pt', 'important');
+                lblBigSize.style.setProperty('line-height', '0.95', 'important');
+                lblBigSize.style.setProperty('letter-spacing', '-0.5px', 'important');
             } else { // Free Size, One Size
-                lblBigSize.style.fontSize = '13pt';
-                lblBigSize.style.lineHeight = '1.02';
-                lblBigSize.style.letterSpacing = '-0.3px';
+                lblBigSize.style.setProperty('font-size', '12pt', 'important');
+                lblBigSize.style.setProperty('line-height', '1.02', 'important');
+                lblBigSize.style.setProperty('letter-spacing', '-0.3px', 'important');
             }
         } else {
             lblBigSize.classList.add('hidden');
